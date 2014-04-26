@@ -2,6 +2,7 @@ var page = require('webpage').create();
 var fs = require('fs');
 
 page.settings.userAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_6_8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/34.0.1847.116 Safari/537.36";
+page.settings.loadImages = false;
 
 page.onConsoleMessage = function(msg){
   console.log("LOG MESSAGE COMING FROM INTRA-BROWSER JS: " + msg);
@@ -51,9 +52,9 @@ var isbn = '9780451413888';
 
 page.open('https://ts360.baker-taylor.com/Pages/default.aspx', function() {
   console.log("JQ has been loaded.");
-  var btn = page.evaluate(function() {
+  var btn = page.evaluate(function(isbn) {
 
-    var isbn = '9780451413888';
+    // var isbn = '9780451413888';
 
     $('#ctl00_PlaceHolderMasterPageHeader_ucSearchBox_SearchPhraseTextBox').val(isbn);
     $('#ctl00_PlaceHolderMasterPageHeader_ucSearchBox_SearchPhraseTextBox_wrapper').val(isbn);
@@ -62,7 +63,7 @@ page.open('https://ts360.baker-taylor.com/Pages/default.aspx', function() {
     SearchBox.Search();
 
 	  console.log("Submitting the form via a simulated ENTER key");
-  });
+  }, isbn);
 
   console.log("Waiting for response to click event");
   waitFor("false", 
@@ -72,7 +73,7 @@ page.open('https://ts360.baker-taylor.com/Pages/default.aspx', function() {
             var minedContent = 
               page.evaluate(function() {
                 var strEmit = "SKLARSKI-TITLE:" + $('#ctl00_BrowseBodyInner_ProductDetailsUserControl_lblTitle').html() + "\n";
-                strEmit += ("SKLARSKI-AUTHOR:" + $('#ctl00_BrowseBodyInner_ProductDetailsUserControl_authors').text() + "\n");
+                strEmit += ("SKLARSKI-AUTHOR:" + $('#ctl00_BrowseBodyInner_ProductDetailsUserControl_authors').html() + "\n");
                 strEmit += ("SKLARSKI-INFO:" + $('#divProductionInformation').html() + "\n");
                 strEmit += ("SKLARSKI-DETAILS:" + $('#ctl00_BrowseBodyInner_ProductDetailsUserControl_bookInfoPanel').html() + "\n");
                 return strEmit;

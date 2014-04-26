@@ -1,6 +1,7 @@
 var page = require('webpage').create();
 
 page.settings.userAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_6_8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/34.0.1847.116 Safari/537.36";
+// page.settings.loadImages = false;
 
 page.onConsoleMessage = function(msg){
   console.log("LOG MESSAGE COMING FROM INTRA-BROWSER JS: " + msg);
