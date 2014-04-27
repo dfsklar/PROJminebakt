@@ -9,7 +9,7 @@ var content = '',
     eol = system.os.name == 'windows' ? "\r\n" : "\n";
 
 try {
-    f = fs.open("/tmp/isbnlist.txt", "r");
+    f = fs.open("isbnlist.txt", "r");
     content = f.read();
 } catch (e) {
     console.log(e);
@@ -120,7 +120,7 @@ function performOneQuery() {
 //            console.log("ABOUT TO CALL pOQ-1 (deferred)");
             setTimeout(function(){performOneQuery();}, 1000);
           },
-          15000);
+          10000);
 };
 
 
