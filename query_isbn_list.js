@@ -1,5 +1,7 @@
 var page = require('webpage').create();
 
+var prevMinedContent = "";
+
 var fs = require('fs'),
     system = require('system');
 
@@ -101,9 +103,11 @@ function performOneQuery() {
   }, isbn);
 
 //  console.log("Waiting for response to click event");
+
+
   waitFor("false", 
           function(){
-            console.log("Emitting for ISBN" + isbn);
+            // console.log("Emitting for ISBN" + isbn);
             var minedContent = 
               page.evaluate(function() {
                 var strEmit = "ZTITLE:" + $('#ctl00_BrowseBodyInner_ProductDetailsUserControl_lblTitle').html() + "\n";
@@ -115,12 +119,15 @@ function performOneQuery() {
                 strEmit += ("ZDETAILS:" + $('#ctl00_BrowseBodyInner_ProductDetailsUserControl_bookInfoPanel').html() + "\n");
                 return strEmit;
               });
-//            page.render("exports/"+isbn+".png");
+	    if (prevMinedContent == minedContent) {
+		// We have a problem -- it is time to exit!
+		phantom.exit(1);
+	    }
+	    prevMinedContent = minedContent;
             fs.write("exports/"+isbn+".data", minedContent);
-//            console.log("ABOUT TO CALL pOQ-1 (deferred)");
             setTimeout(function(){performOneQuery();}, 1000);
           },
-          10000);
+          8000);
 };
 
 
