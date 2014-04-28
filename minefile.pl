@@ -279,7 +279,7 @@ sub UpdateInventoryRecordViaParse_BOOK
     #       #$attributes .= " Physical description: $physdescr";
     #    #}
 
-    my($thesql) = "UPDATE inventory SET Status_ABE='NeedsUpload', BOOLneedsDetailsDownload='N', PhysicalDescr='$includedbonus$physdescr', InternalStatus='$pubstatus', Edition='$rawedition$editioninfoFoundJustAfterTitle', Weight=$weightHunpound, Type='$prodtype', Title='$title', Author='$author', Binding='$binding', Lang='$langcode', Manufacturer='$publisher', PubDate='$pubdate', BOOLhasAlternateFormats=$BOOLhasAlternateFormats     WHERE  Id='$isbn' LIMIT 1;\n";
+    my($thesql) = "UPDATE inventory SET BOOLneedsDetailsDownload='N', PhysicalDescr='$includedbonus$physdescr', InternalStatus='$pubstatus', Edition='$rawedition$editioninfoFoundJustAfterTitle', Weight=$weightHunpound, Type='$prodtype', Title='$title', Author='$author', Binding='$binding', Lang='$langcode', Manufacturer='$publisher', PubDate='$pubdate', BOOLhasAlternateFormats=$BOOLhasAlternateFormats     WHERE  Id='$isbn' LIMIT 1;\n";
 
     print $thesql;
 
