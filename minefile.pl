@@ -179,6 +179,7 @@ sub UpdateInventoryRecordViaParse_BOOK
     if ($langcode) {
       $langcode = "English" if ($langcode =~ /ENG/i);
       $langcode = "Spanish/Espanol" if ($langcode =~ /ESP/i);
+      $langcode = "Spanish/Espanol" if ($langcode =~ /SPA/i);
       $langcode = "French/Francais" if ($langcode =~ /FRA/i);
       $langcode = "German/Deutch" if ($langcode =~ /DEU/i);
     }
@@ -279,4 +280,4 @@ sub UpdateInventoryRecordViaParse_BOOK
 
   }
 
-  &UpdateInventoryRecordViaParse_BOOK("exports/9781451783186.data");
+  &UpdateInventoryRecordViaParse_BOOK($ARGV[0]);
