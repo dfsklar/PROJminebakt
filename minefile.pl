@@ -89,6 +89,11 @@ sub UpdateInventoryRecordViaParse_BOOK
         }
         if ($tomine =~ /Publish Date:<\/span><span class=".*?">(.*?)\<\/span>/) {
           $pubdate = &SAFE($1);
+          if ($pubdate =~ /(\d\d)\/(\d\d)\/(\d\d\d\d)/) {
+            $pubdate = $3."-".$1."-".$2;
+          }else{
+            die "Weird pubdate $pubdate for $isbn";
+          }
         }
         if ($tomine =~ /Publish Status:<\/span><span class=".*?">(.*?)\<\/span>/) {
           $pubstatus = &SAFE($1);
@@ -274,7 +279,7 @@ sub UpdateInventoryRecordViaParse_BOOK
     #       #$attributes .= " Physical description: $physdescr";
     #    #}
 
-    my($thesql) = "UPDATE inventory SET BOOLneedsDetailsDownload='N', PhysicalDescr='$includedbonus$physdescr', InternalStatus='$pubstatus', Edition='$rawedition$editioninfoFoundJustAfterTitle', Weight=$weightHunpound, Type='$prodtype', Title='$title', Author='$author', Binding='$binding', Lang='$langcode', Manufacturer='$publisher', PubDate='$pubdate', BOOLhasAlternateFormats=$BOOLhasAlternateFormats     WHERE  Id='$isbn' LIMIT 1;\n";
+    my($thesql) = "UPDATE inventory SET Status_ABE='NeedsUpload', BOOLneedsDetailsDownload='N', PhysicalDescr='$includedbonus$physdescr', InternalStatus='$pubstatus', Edition='$rawedition$editioninfoFoundJustAfterTitle', Weight=$weightHunpound, Type='$prodtype', Title='$title', Author='$author', Binding='$binding', Lang='$langcode', Manufacturer='$publisher', PubDate='$pubdate', BOOLhasAlternateFormats=$BOOLhasAlternateFormats     WHERE  Id='$isbn' LIMIT 1;\n";
 
     print $thesql;
 
