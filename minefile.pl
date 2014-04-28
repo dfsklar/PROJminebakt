@@ -46,8 +46,7 @@ sub UpdateInventoryRecordViaParse_BOOK
     my($includedbonus);
     my($pubdate);
     my($physdescr);
-    my($weight);
-    my($weightHunpound);
+    my($weightHunpound) = -567;
     my($langcode);
     my($publisher);
     my($title);
@@ -69,7 +68,7 @@ sub UpdateInventoryRecordViaParse_BOOK
     while (<FIN>) {
       chomp;
       if (/^ZTITLE:(.*)$/) {
-        $title = $1;
+        $title = &SAFE($1);
       }
       elsif (/^ZDETAILS:/) {
         $tomine = "";
@@ -82,13 +81,39 @@ sub UpdateInventoryRecordViaParse_BOOK
           $_ =~ s/ *$//;
           $tomine .= $_;
         }
-        if ($tomine =~ /Publisher:\<\/span><span class=.*?>(.*)\<\/span>/) {
-          $publisher = $1;
+        if ($tomine =~ /Publisher:\<\/span><span class=.*?>(.*?)\<\/span>/) {
+          $publisher = &SAFE($1);
         }
         if ($tomine =~ /Edition\/Volume:<\/span><span class=".*?">(.*?)\<\/span>/) {
-          $rawedition = $1;
+          $rawedition = &SAFE($1);
         }
-        die $tomine;
+        if ($tomine =~ /Publish Date:<\/span><span class=".*?">(.*?)\<\/span>/) {
+          $pubdate = &SAFE($1);
+        }
+        if ($tomine =~ /Publish Status:<\/span><span class=".*?">(.*?)\<\/span>/) {
+          $pubstatus = &SAFE($1);
+          if ($pubstatus =~ /NOT YET PUBLISHED/i) {
+            $pubstatus = "NotYetP";
+          } elsif ($pubstatus =~ /APPLY DIRECT/i) {
+            $pubstatus = "ApplyDirect";
+          } elsif ($pubstatus =~ /AD/i) {
+            $pubstatus = "ApplyDirect";
+          } elsif ($pubstatus =~ /PUBLISHER OUT OF STOCK/i) {
+            $pubstatus = "PubOOS";
+          } elsif ($pubstatus =~ /PERMANENTLY OUT OF STOCK/i) {
+            $pubstatus = "PermOOS";
+          } elsif ($pubstatus =~ /OUT OF PRINT/i) {
+            $pubstatus = "OOP";
+          } elsif ($pubstatus =~ /OUT OF BUSINESS/i) {
+            $pubstatus = "OOBusiness";
+          } elsif ($pubstatus =~ /UNABLE TO LOCATE/i) {
+            $pubstatus = "OOBusiness";
+          } elsif ($pubstatus =~ /PRODUCT CANCELLED/i) {
+            $pubstatus = "PermOOS";
+          } elsif ($pubstatus) {
+            die "___________\n$_\nPUBLISH STATUS IS UNRECOGNIZED ($pubstatus) FOR ISBN $isbn \n\n";
+          }
+        }
       }
       elsif (/^ZAUTHOR:(.*)$/) {
         $rawauthorlist = $1;
@@ -96,9 +121,9 @@ sub UpdateInventoryRecordViaParse_BOOK
         while (1) {
           if ($rawauthorlist =~ /\<a.*?\"\>(.*?)\<\/a\>/) {
             if ($author) {
-              $author .= "; " . $1;
+              $author .= "; " . &SAFE($1);
             } else {
-              $author = $1;
+              $author = &SAFE($1);
             }
             $rawauthorlist = $';
           }else{
@@ -123,12 +148,14 @@ sub UpdateInventoryRecordViaParse_BOOK
         if ($tomine =~ /Primary Physical Format:\<\/td\>\<td\>(.*?)\<\/td\>/) {
           $binding = $1;
         }
+        if ($tomine =~ /Included Format:\<\/td\>\<td\>(.*?)\<\/td\>/) {
+          $includedbonus = "Includes " . &SAFE($1) . ". ";
+        }
         if ($tomine =~ /Physical Description:\<\/td\>\<td\>(.*?)\<\/td\>/) {
-          $descr = $1;
-          if ($descr =~ /([\d\.]+) lbs\./) {
-            $weightHunpound = $1 * 100;
+          $physdescr = $1;
+          if ($physdescr =~ /([\d\.]+) lbs\./) {
+            $weightHunpound = int($1 * 100);
           }
-          $binding = $1;
         }
       }
       elsif (/^ZBTINF:/) {
@@ -148,8 +175,108 @@ sub UpdateInventoryRecordViaParse_BOOK
         }
       }
     }
+
+    if ($langcode) {
+      $langcode = "English" if ($langcode =~ /ENG/i);
+      $langcode = "Spanish/Espanol" if ($langcode =~ /ESP/i);
+      $langcode = "French/Francais" if ($langcode =~ /FRA/i);
+      $langcode = "German/Deutch" if ($langcode =~ /DEU/i);
+    }
+
+    $title = $LABELisAudiobook . $title;
+
+    if ( ! $isbn ) {
+      print STDERR "NO DATA FOUND IN FILE $filetoparse\n";
+      return;
+    }
+    if ( ! $title ) {
+      print STDERR "NO TITLE FOUND FOR ISBN $isbn\n";
+      return;
+    }
+    
+    if ($weightHunpound < 0) {
+      print STDERR "ISBN $isbn -- no weight info, but allowing through\n";
+      $weightHunpound = "NULL";
+    }
+
+
+    # MID-2007: New way to identify study guides
+    if ($rawedition =~ /study ?guide/i) {
+      $warnings .= "Title was adjusted. ";
+      $title = "STUDY GUIDE: " . $title;
+    } elsif ($rawedition =~ /signed/i) {
+      $warnings .= "Title was adjusted. Error in ContentCafe (use of 'signed' instead of StGd). ";
+      $title = "STUDY GUIDE: " . $title;
+      $rawedition =~ s/signed/StGd/i;
+    } elsif ($rawedition =~ /student ?guide/i) {
+      $warnings .= "Title was adjusted. ";
+      $title = "STUDY GUIDE: " . $title;
+    }
+
+    if ($rawedition =~ /workbook/i) {
+      $warnings .= "Title was adjusted. ";
+      $title = "WORKBOOK: " . $title;
+    }
+
+    if ($rawedition =~ /solution/i) {
+      $warnings .= "Title was adjusted. ";
+      $title = "SOLUTIONS MANUAL: " . $title;
+    }
+
+
+    # JULY 2007: Trying to recognize cases of only one volume
+    if ($rawedition =~ /vol\. ?(\w+)/) {
+      $warnings .= "Title was adjusted.  URGENT: ambiguity regarding volume specifications. ";
+      $title .= " (VOLUME " . $1 . ")";
+    }
+
+
+    $rawedition =~ s/;$//;
+
+    $rawedition =~ s/Edit.(\d\d)/\1th./;
+    $rawedition =~ s/Edit.1/1st./;
+    $rawedition =~ s/Edit.(2)/\1nd./;
+    $rawedition =~ s/Edit.3/3rd./;
+    $rawedition =~ s/Edit.(\d)/\1th./;
+
+
+
+    $author =~ s/\(EDT\)/(Editor)/g;
+    $author =~ s/\(PHT\)/(Photos)/g;
+    $author =~ s/\(ILT\)/(Illustrator)/g;
+    $author =~ s/\(TRN\)/(Translator)/g;
+
+
+    # BUILD THE EXTRA-DESCRIPTION (language, physical description)
+    # BUILD THE EXTRA-DESCRIPTION (language, physical description)
+    # BUILD THE EXTRA-DESCRIPTION (language, physical description)
+
+
+    #### I've decided BINDING should be added to description by marketplaces
+    #if ($binding) {
+    #        $attributes .= "Binding: $binding" . ". ";
+    #        $canonbinding = $binding;
+    #        if ($canonbinding =~ /LIBRARY/i) {
+    #                 $canonbinding = 'HARDCOVER';
+    #        }
+    #}
+
+
+    if ($langcode) {
+      $langcode = "English" if ($langcode eq "ENG");
+      $langcode = "Spanish/Espanol" if ($langcode eq "ESP");
+      $langcode = "French/Francais" if ($langcode eq "FRA");
+      $langcode = "German/Deutch" if ($langcode eq "DEU");
+    }
+
+    #    #if ($physdescr) {
+    #       #$attributes .= " Physical description: $physdescr";
+    #    #}
+
+    my($thesql) = "UPDATE inventory SET BOOLneedsDetailsDownload='N', PhysicalDescr='$includedbonus$physdescr', InternalStatus='$pubstatus', Edition='$rawedition$editioninfoFoundJustAfterTitle', Weight=$weightHunpound, Type='$prodtype', Title='$title', Author='$author', Binding='$binding', Lang='$langcode', Manufacturer='$publisher', PubDate='$pubdate', BOOLhasAlternateFormats=$BOOLhasAlternateFormats     WHERE  Id='$isbn' LIMIT 1;\n";
+
+    print $thesql;
+
   }
 
-
-  &UpdateInventoryRecordViaParse_BOOK("exports/9781444154344.data");
-
+  &UpdateInventoryRecordViaParse_BOOK("exports/9781451783186.data");
