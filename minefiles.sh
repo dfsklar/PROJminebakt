@@ -1,4 +1,4 @@
-for X in exports_02/*.data
+for X in exports_03/*.data
 do
     perl minefile.pl $X || exit
 done
