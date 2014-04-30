@@ -48,13 +48,11 @@ function waitFor(testFx, onReady, timeOutMillis) {
   }, 2000); // < repeat check interval
 };
 
-var isbn = '9780451413888';
+var isbn = '9781480603387';
 
 page.open('https://ts360.baker-taylor.com/Pages/default.aspx', function() {
   console.log("JQ has been loaded.");
   var btn = page.evaluate(function(isbn) {
-
-    // var isbn = '9780451413888';
 
     $('#ctl00_PlaceHolderMasterPageHeader_ucSearchBox_SearchPhraseTextBox').val(isbn);
     $('#ctl00_PlaceHolderMasterPageHeader_ucSearchBox_SearchPhraseTextBox_wrapper').val(isbn);
@@ -68,8 +66,9 @@ page.open('https://ts360.baker-taylor.com/Pages/default.aspx', function() {
   console.log("Waiting for response to click event");
   waitFor("false", 
           function(){
-            console.log("Emitting PNG and captured DOM");
+            console.log("Emitting PNG");
             page.render("./query_result.png");
+	    console.log(page.content);
             var minedContent = 
               page.evaluate(function() {
                 var strEmit = "SKLARSKI-TITLE:" + $('#ctl00_BrowseBodyInner_ProductDetailsUserControl_lblTitle').html() + "\n";
@@ -78,7 +77,7 @@ page.open('https://ts360.baker-taylor.com/Pages/default.aspx', function() {
                 strEmit += ("SKLARSKI-DETAILS:" + $('#ctl00_BrowseBodyInner_ProductDetailsUserControl_bookInfoPanel').html() + "\n");
                 return strEmit;
               });
-            fs.write("exports/"+isbn+".data", minedContent);
+            // fs.write("exports/"+isbn+".data", minedContent);
             phantom.exit();
           },
           15000);
