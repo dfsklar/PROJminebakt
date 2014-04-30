@@ -110,7 +110,8 @@ function performOneQuery() {
             // console.log("Emitting for ISBN" + isbn);
             var minedContent = 
               page.evaluate(function() {
-                var strEmit = "ZTITLE:" + $('#ctl00_BrowseBodyInner_ProductDetailsUserControl_lblTitle').html() + "\n";
+		var strEmit;
+                strEmit = "ZTITLE:" + $('#ctl00_BrowseBodyInner_ProductDetailsUserControl_lblTitle').html() + "\n";
                 strEmit += ("ZAUTHOR:" + $('#ctl00_BrowseBodyInner_ProductDetailsUserControl_authors').html() + "\n");
                 strEmit += ("ZPRODINF:" + $('#divProductionInformation').html() + "\n");
                 strEmit += ("ZPHYS:" + $('#divPhysical').html() + "\n");
@@ -119,13 +120,22 @@ function performOneQuery() {
                 strEmit += ("ZDETAILS:" + $('#ctl00_BrowseBodyInner_ProductDetailsUserControl_bookInfoPanel').html() + "\n");
                 return strEmit;
               });
-	    if (prevMinedContent == minedContent) {
-		// We have a problem -- it is time to exit!
-		phantom.exit(1);
+	    if (minedContent.match(/ZTITLE:null/)) {
+		if (page.content.match(/Found \<b\>0 items/m)) {
+		    fs.write("exports/"+isbn+".zero", "ZCOND:ZERO\nZISBN:"+isbn);
+		}
+		else {
+		    fs.write("exports/"+isbn+".err", "ZCOND:ERR\nZISBN:"+isbn+"\nZDETAILS:" + page.content);
+		}
+	    }else{
+		if (prevMinedContent == minedContent) {
+		    // We have a problem -- it is time to exit!
+		    phantom.exit(1);
+		}
+		prevMinedContent = minedContent;
+		fs.write("exports/"+isbn+".data", minedContent);
 	    }
-	    prevMinedContent = minedContent;
-            fs.write("exports/"+isbn+".data", minedContent);
-            setTimeout(function(){performOneQuery();}, 1000);
+	    setTimeout(function(){performOneQuery();}, 1000);
           },
           8000);
 };
