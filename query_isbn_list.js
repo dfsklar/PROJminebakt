@@ -11,7 +11,7 @@ var content = '',
     eol = system.os.name == 'windows' ? "\r\n" : "\n";
 
 try {
-    f = fs.open("isbnlist.txt", "r");
+    f = fs.open("isbnlist_one_cycle.txt", "r");
     content = f.read();
 } catch (e) {
     console.log(e);
@@ -52,7 +52,7 @@ page.onConsoleMessage = function(msg){
  * @param timeOutMillis the max amount of time to wait. If not specified, 3 sec is used.
  */
 function waitFor(testFx, onReady, timeOutMillis) {
-  var maxtimeOutMillis = timeOutMillis ? timeOutMillis : 6000, //< Default Max Timout is 6s
+  var maxtimeOutMillis = timeOutMillis ? timeOutMillis : 10000, //< Default Max Timout is 6s
   start = new Date().getTime(),
   condition = false,
   interval = setInterval(function() {
@@ -120,12 +120,16 @@ function performOneQuery() {
                 strEmit += ("ZDETAILS:" + $('#ctl00_BrowseBodyInner_ProductDetailsUserControl_bookInfoPanel').html() + "\n");
                 return strEmit;
               });
+	    if (!minedContent) {
+		phantom.exit(1);
+	    }
 	    if (minedContent.match(/ZTITLE:null/)) {
 		if (page.content.match(/Found \<b\>0 items/m)) {
 		    fs.write("exports/"+isbn+".zero", "ZCOND:ZERO\nZISBN:"+isbn);
 		}
 		else {
 		    fs.write("exports/"+isbn+".err", "ZCOND:ERR\nZISBN:"+isbn+"\nZDETAILS:" + page.content);
+		    phantom.exit(1);
 		}
 	    }else{
 		if (prevMinedContent == minedContent) {
@@ -137,7 +141,7 @@ function performOneQuery() {
 	    }
 	    setTimeout(function(){performOneQuery();}, 1000);
           },
-          8000);
+          10000);
 };
 
 
